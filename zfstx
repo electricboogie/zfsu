@@ -53,7 +53,7 @@ usage() {
 }
 
 # Script begins here
-if ! options=$(getopt -o h:r:l:k:b:p:P:n -l remote-host:,remote-fs:,local-fs:,keep:,mbuffer:,port:,no-pigz,dry-run -- "$@") ; then
+if ! options=$(getopt -o k:b:p:P:n -l keep:,mbuffer:,port:,no-pigz,dry-run -- "$@") ; then
 	echo "Invalid options."
 	exit 1
 fi
@@ -90,7 +90,7 @@ which mbuffer > /dev/null 2>&1 || { echo "ERROR: 'mbuffer' is not installed."; e
 [ -n "$pigz" ] || pigz="pigz"
 [ -n "$gunzip" ] || gunzip="gunzip"
 
-ssh="ssh -n -x -p${port} -o Compression=no -c arcfour ${remote_host}"
+ssh="ssh -n -x -p${port} -o Compression=no -o ConnectTimeout=10 -c arcfour ${remote_host}"
 mbuffer="mbuffer -q -m ${bufsz}"
 
 # Disable SSH if operating locally
