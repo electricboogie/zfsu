@@ -1,0 +1,197 @@
+#!/bin/bash
+
+# The MIT License (MIT)
+
+# Copyright (c) 2014 Jaakko Salo
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+#set -x
+
+# Snapshot part of snapshot name
+snapof() {
+	echo $1 | cut -d'@' -f 2
+}
+
+# Dataset part of snapshot name
+datasetof() {
+	echo $1 | cut -d'@' -f 1
+}
+
+usage() {
+	echo "Usage: zfstx [OPTION]..."
+	echo "Pull ZFS snapshots from a remote host."
+	echo ""
+	echo "Mandatory options:"
+	echo "  -h, --remote-host <host> - remote host"
+	echo "  -r, --remote-fs <fs>     - filesystem on remote host"
+	echo "  -l, --local-fs <fs>      - filesystem on local host"
+	echo ""
+	echo "Optional options:"
+	echo "  -k, --keep <count>       - preserved history length"
+	echo "  -b, --mbuffer <bufsz>    - mbuffer buffer size, default 4G"
+	echo "  -p, --port <port>        - custom SSH port, default 22"
+	echo "  -P, --no-pigz            - disable pigz"
+	echo "  -n, --dry-run            - Don't apply changes, just print (experimental)"
+	echo ""
+}
+
+# Script begins here
+if ! options=$(getopt -o h:r:l:k:b:p:P:n -l remote-host:,remote-fs:,local-fs:,keep:,mbuffer:,port:,no-pigz,dry-run -- "$@") ; then
+	echo "Invalid options."
+	exit 1
+fi
+
+while [ $# -gt 0 ]
+do
+	case $1 in
+		--remote-host | -h) remote_host="$2"; shift;;
+		--remote-fs | -r) remote_fs="$2"; shift;;
+		--local-fs | -l) local_fs="$2"; shift;;
+		--keep | -k) keep="$2"; shift;;
+		--mbuffer | -b) bufsz="$2"; shift;;
+		--port | -p) port="$2"; shift;;
+		--no-pigz | -P) pigz="cat"; gunzip="cat" ;;
+		--dry-run | -n) dryrun="1" ;;
+		(-*) echo "ERROR: $0 - unrecognized option $1" 1>&2; exit 1;;
+		(*) break;;
+	esac
+	shift
+done
+
+# Check dependencies
+which mbuffer > /dev/null 2>&1 || { echo "ERROR: 'mbuffer' is not installed."; exit 1; }
+[ -z "$pigz" ] && which pigz > /dev/null 2>&1 || { echo "ERROR: 'pigz' is not installed. Install it, or use --no-pigz."; exit 1; }
+
+# Check mandatory options
+[ -z "$remote_host" -o -z "$remote_fs" -o -z "$local_fs" ] && { usage; exit 1; }
+
+# Defaults if no parameter given
+[ -n "$port" ] || port=22
+[ -n "$bufsz" ] || bufsz="4G"
+[ -n "$pigz" ] || pigz="pigz"
+[ -n "$gunzip" ] || gunzip="gunzip"
+
+ssh="ssh -n -x -p${port} -o Compression=no -c arcfour ${remote_host}"
+mbuffer="mbuffer -q -m ${bufsz}"
+
+# Disable SSH if operating locally
+if [ "$remote_host" = "localhost" ] ; then
+	echo "[$(date)] Skipping SSH, --remote-host is localhost."
+	ssh="bash -c"
+fi
+
+# Generate lockfile based on target dataset name
+lockf=/var/lock/zfs_replicate_$(echo "$remote_host" "$remote_fs" | md5sum | cut -d' ' -f 1) || exit 1
+
+(
+	if ! flock -n -x 9; then
+		exit 0
+	fi
+	
+	# Create local filesystem 
+	has_local_fs=$(zfs list -H -t filesystem "$local_fs" 2> /dev/null)
+	
+	if [ $? -ne 0 ]; then
+		if [ -z "$dryrun" ]; then
+			echo "[$(date)] Local filesystem $local_fs does not exist. Creating ..."
+			zfs create -p "$local_fs" || \
+				{ echo "ERROR: Can't create local filesystem."; exit 1; }
+		else
+			echo "[$(date)] Local filesystem $local_fs does not exist. This WOULD create it."
+		fi
+	else
+		echo "[$(date)] Local filesystem $local_fs exists."
+	fi
+
+	# Get remote snapshots, extract most recent snapshot
+	remote_list=$($ssh "zfs list -H -r -d 1 -t snapshot -o name -s creation \"$remote_fs\"") && [ -n "$remote_list" ] || \
+		{ echo "ERROR: Unable to get remote snapshots."; exit 1; }
+
+	remote_first=$(echo "$remote_list" | head -n 1)	
+	remote_last=$(echo "$remote_list" | tail -n 1)
+
+	echo "[$(date)] Last remote snapshot is $remote_last"
+
+	# Get local snapshots, if available
+	local_list="$(zfs list -H -r -d 1 -t snapshot -o name -s creation "$local_fs")"
+
+	# Receive full stream or incremental?
+	if [ $? -ne 0 ] || [ -z "$local_list" ] ; then
+		# Send first snapshot
+		if [ -z "$dryrun" ]; then
+			echo "[$(date)] No local snapshots. Retrieving first remote snapshot $remote_first ..."
+			$ssh "zfs send \"$remote_first\" | $pigz" | $mbuffer | $gunzip | zfs receive -F -u "$local_fs" || \
+				{ echo "ERROR: Send/receive failed. Unable to continue."; exit 1; }
+				
+			echo "[$(date)] Initial transfer complete."				
+		else
+			echo "[$(date)] No local snapshots. This WOULD retrieving the first remote snapshot $remote_first."
+		fi
+
+		# Last snapshot is now the first remote snapshot
+		local_last="$local_fs@$(snapof "$remote_first")"
+	else
+		# Local latest snapshot
+		local_last=$(echo "$local_list" | tail -n 1)
+	fi
+
+	echo "[$(date)] Last local snapshot is $local_last."
+
+	# Send+receive incremental
+	if [ "$(snapof "$local_last")" != "$(snapof "$remote_last")" ]; then
+		remote_source="$(datasetof "$remote_last")@$(snapof "$local_last")"
+
+		if [ -z "$dryrun" ]; then
+			echo "[$(date)] Retrieving snapshots between $remote_source and $remote_last ..."
+			if ! $ssh "zfs send -I \"$remote_source\" \"$remote_last\" | $pigz" | $mbuffer | $gunzip | zfs receive -F -u "$local_fs" ; then
+				echo "ERROR: Send/receive failed. Destroying partially received data (in case children got updated) and exiting. Most errors below are OK.";
+				zfs rollback -r "${local_fs}@$(snapof "$local_last")"
+				exit 1
+			fi
+			
+			echo "[$(date)] Incremental transfer complete."
+		else
+			echo "[$(date)] This WOULD retrieve the snapshots between $remote_source and $remote_last."
+		fi
+	else
+		echo "[$(date)] No new snapshots. All good."
+	fi
+
+	# Housekeeping
+	if [ -n "$keep" ]; then
+		local_list="$(zfs list -H -r -d 1 -t snapshot -o name -s creation "$local_fs")"
+		local_delete_list=$(echo "$local_list" | head -n-$keep)
+
+		if [ -n "$local_delete_list" ]; then
+			echo "[$(date)] Destroying old local snapshots ..."
+			echo "$local_delete_list" | while read snap; do
+				if [ -z "$dryrun" ]; then
+					echo "[$(date)] - $snap"
+					zfs destroy "$snap"
+				else
+					echo "[$(date)] - This WOULD destroy $snap"
+				fi
+			done
+		else
+			echo "[$(date)] No housekeeping to do."
+		fi
+	fi
+) 9>$lockf
+
