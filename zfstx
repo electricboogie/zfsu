@@ -35,15 +35,15 @@ datasetof() {
 }
 
 usage() {
-	echo "Usage: zfstx [OPTION]..."
-	echo "Pull ZFS snapshots from a remote host."
+	echo "Usage: zfstx [OPTIONS] <remote-host>:<remote-fs> <local-fs>"
+	echo "Pull ZFS snapshots from a remote host into the local zpool."
 	echo ""
-	echo "Mandatory options:"
-	echo "  -h, --remote-host <host> - remote host"
-	echo "  -r, --remote-fs <fs>     - filesystem on remote host"
-	echo "  -l, --local-fs <fs>      - filesystem on local host"
+	echo "Arguments:"
+	echo "  <remote-host>            - remote host, e.g. myhost"
+	echo "  <remote-fs>              - filesystem on remote host, e.g. tank/home"
+	echo "  <local-fs>               - filesystem on local host, e.g. backuppool/myhost/home"
 	echo ""
-	echo "Optional options:"
+	echo "Options:"
 	echo "  -k, --keep <count>       - preserved history length"
 	echo "  -b, --mbuffer <bufsz>    - mbuffer buffer size, default 4G"
 	echo "  -p, --port <port>        - custom SSH port, default 22"
@@ -58,12 +58,10 @@ if ! options=$(getopt -o h:r:l:k:b:p:P:n -l remote-host:,remote-fs:,local-fs:,ke
 	exit 1
 fi
 
+# Parse options
 while [ $# -gt 0 ]
 do
 	case $1 in
-		--remote-host | -h) remote_host="$2"; shift;;
-		--remote-fs | -r) remote_fs="$2"; shift;;
-		--local-fs | -l) local_fs="$2"; shift;;
 		--keep | -k) keep="$2"; shift;;
 		--mbuffer | -b) bufsz="$2"; shift;;
 		--port | -p) port="$2"; shift;;
@@ -74,6 +72,10 @@ do
 	esac
 	shift
 done
+
+remote_host=$(echo "$1" | cut -d':' -f 1)
+remote_fs=$(echo "$1" | cut -d':' -f 2)
+local_fs=$2
 
 # Check dependencies
 which mbuffer > /dev/null 2>&1 || { echo "ERROR: 'mbuffer' is not installed."; exit 1; }
