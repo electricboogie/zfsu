@@ -1,9 +1,7 @@
 zfstx
 =====
 
-Maintain a mirror of ZFS pools over the network.
-
-Based on ZFS transfer, see https://github.com/jvsalo/zfs_transfer
+Maintain a mirror of ZFS pools over the network. Based on ZFS transfer, see https://github.com/jvsalo/zfs_transfer
 
 Best used together with https://github.com/zfsonlinux/zfs-auto-snapshot
 set up on the remote host. It should be possible to chain multiple ZFS
@@ -36,9 +34,6 @@ it goes on to destroy a local snapshot. Failure to do so, would disturb
 snapshot expiry on the remote host indefinitely!
 
 ```
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
-0 0  1   *   *     zpool scrub offsite
 #                                    Hostname            Remote dataset                Local dataset             Keep count
 # m h  dom mon dow   command         ------------        ----------------------------  ------------------------  ------------
 0 */6 *  *   *       zfstx           -h 192.168.1.14     -r backuppool/virt/machines   -l offsite/virt/machines  -k 30
