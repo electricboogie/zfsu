@@ -1,7 +1,9 @@
-zfs_transfer
-============
+zfstx
+=====
 
 Maintain a mirror of ZFS pools over the network.
+
+Based on ZFS transfer, see https://github.com/jvsalo/zfs_transfer
 
 Best used together with https://github.com/zfsonlinux/zfs-auto-snapshot
 set up on the remote host. It should be possible to chain multiple ZFS
@@ -41,8 +43,8 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 #                                    Hostname            Remote dataset                          Local dataset                          Hold tag       Keep days
 # m h  dom mon dow   command         ------------        --------------------------------------- -------------------------------------- -------------- ------------
-0 */6 *  *   *     zfs_replicate   -h 192.168.1.14    -r backuppool/virt/machines             -l offsite/virt/machines               -t offsite     -k 30
-10 */6 *  *   *     zfs_replicate   -h 192.168.1.14    -r backuppool/backuppc                  -l offsite/backuppc                    -t offsite     -k 30
-20 */6 *  *   *     zfs_replicate   -h 192.168.1.14    -r backuppool/timemachine               -l offsite/timemachine                 -t offsite     -k 30
-50 */6 *  *   *     zfs_replicate   -h 192.168.1.14    -r backuppool/vdp                       -l offsite/vdp                         -t offsite     -k 30
+0 */6 *  *   *     zfstx   -h 192.168.1.14    -r backuppool/virt/machines             -l offsite/virt/machines               -t offsite     -k 30
+10 */6 *  *   *     zfstx   -h 192.168.1.14    -r backuppool/backuppc                  -l offsite/backuppc                    -t offsite     -k 30
+20 */6 *  *   *     zfstx   -h 192.168.1.14    -r backuppool/timemachine               -l offsite/timemachine                 -t offsite     -k 30
+50 */6 *  *   *     zfstx   -h 192.168.1.14    -r backuppool/vdp                       -l offsite/vdp                         -t offsite     -k 30
 ```
