@@ -36,15 +36,13 @@ it goes on to destroy a local snapshot. Failure to do so, would disturb
 snapshot expiry on the remote host indefinitely!
 
 ```
-MAILTO="user@host.com"
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 0 0  1   *   *     zpool scrub offsite
-
-#                                    Hostname            Remote dataset                          Local dataset                          Hold tag       Keep days
-# m h  dom mon dow   command         ------------        --------------------------------------- -------------------------------------- -------------- ------------
-0 */6 *  *   *     zfstx   -h 192.168.1.14    -r backuppool/virt/machines             -l offsite/virt/machines               -t offsite     -k 30
-10 */6 *  *   *     zfstx   -h 192.168.1.14    -r backuppool/backuppc                  -l offsite/backuppc                    -t offsite     -k 30
-20 */6 *  *   *     zfstx   -h 192.168.1.14    -r backuppool/timemachine               -l offsite/timemachine                 -t offsite     -k 30
-50 */6 *  *   *     zfstx   -h 192.168.1.14    -r backuppool/vdp                       -l offsite/vdp                         -t offsite     -k 30
+#                                    Hostname            Remote dataset                Local dataset             Keep count
+# m h  dom mon dow   command         ------------        ----------------------------  ------------------------  ------------
+0 */6 *  *   *       zfstx           -h 192.168.1.14     -r backuppool/virt/machines   -l offsite/virt/machines  -k 30
+10 */6 *  *   *      zfstx           -h 192.168.1.14     -r backuppool/backuppc        -l offsite/backuppc       -k 30
+20 */6 *  *   *      zfstx           -h 192.168.1.14     -r backuppool/timemachine     -l offsite/timemachine    -k 30
+50 */6 *  *   *      zfstx           -h 192.168.1.14     -r backuppool/vdp             -l offsite/vdp            -k 30
 ```
