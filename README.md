@@ -1,43 +1,39 @@
+zfstx & zfsret
+==============
+
+**zfstx** maintains a mirror of a ZFS pool over the network. It is based on [ZFS transfer](https://github.com/jvsalo/zfs_transfer). Rather than pushing snapshots off to a remote host,it **pulls** remote snapshots into a local filesystem. That way, all the mirroring logic can be centralized on the backup-host.
+
+**zfsret** is a simple script to apply local retention (destroy snapshots) of a filesystem and its snapshots.
+
 zfstx
-=====
+-----
 
-Maintain a mirror of ZFS pools over the network. Based on ZFS transfer, see https://github.com/jvsalo/zfs_transfer
-
-Best used together with https://github.com/zfsonlinux/zfs-auto-snapshot
-set up on the remote host. It should be possible to chain multiple ZFS
-hosts.
-
-Below is a crontab usage example. Here the various datasets
-and snapshots from the host 192.168.1.14 are replicated to our local
-ZFS pool, using SSH (-o Compression=no -c arcfour) and caching (mbuffer)
-optimizations.
-
-Parent datasets are automatically created before the initial synch,
-when you add a dataset.
-
-We use 'zfs hold' to implement locking that prevents destruction of
-remote snapshots, that would put the synchronization process in danger.
-
-This allows for laid-back snapshot expiry management on the remote host,
-since a lot of force (you need to remove the hold tag) is required to
-destroy the latest mutually known snapshot.
-
-The script should be quite tolerant against various failure conditions.
-If you can make it better, please do!
-
-In below crontab, the remote pool is called "backuppool", and the local site
-is "offsite".
-
-The "Keep days" parameter only destroys local (offsite) snapshots. It
-makes sure that a hold is released, if exists, on the remote host before
-it goes on to destroy a local snapshot. Failure to do so, would disturb
-snapshot expiry on the remote host indefinitely!
-
+**Usage**
 ```
-#                                    Hostname            Remote dataset                Local dataset             Keep count
-# m h  dom mon dow   command         ------------        ----------------------------  ------------------------  ------------
-0 */6 *  *   *       zfstx           -h 192.168.1.14     -r backuppool/virt/machines   -l offsite/virt/machines  -k 30
-10 */6 *  *   *      zfstx           -h 192.168.1.14     -r backuppool/backuppc        -l offsite/backuppc       -k 30
-20 */6 *  *   *      zfstx           -h 192.168.1.14     -r backuppool/timemachine     -l offsite/timemachine    -k 30
-50 */6 *  *   *      zfstx           -h 192.168.1.14     -r backuppool/vdp             -l offsite/vdp            -k 30
+$ zfstx
+Usage: zfstx [OPTIONS] <remote-host>:<remote-fs> <local-fs>
+Pull ZFS snapshots from a remote host into the local zpool.
+
+Arguments:
+  <remote-host>            - Remote host, e.g. myhost
+  <remote-fs>              - Filesystem on remote host, e.g. tank/home
+  <local-fs>               - Filesystem on local host, e.g. backuppool/myhost/home
+
+Options:
+  -k, --keep <count>       - preserved history length
+  -b, --mbuffer <bufsz>    - mbuffer buffer size, default 4G
+  -p, --port <port>        - custom SSH port, default 22
+  -P, --no-pigz            - disable pigz
+  -n, --dry-run            - Don't apply changes, just print (experimental)
 ```
+
+**Examples**
+```
+$ zfstx platop:tank/home/pheckel tank/backups/platop/home/pheckel
+  # Pull all (missing) snapshots from host "platop" into the local pool "tank"
+  # and don't apply any retention.
+  
+$ zfstx --keep 5 platop:tank/home/pheckel/vms tank/backups/platop/home/pheckel/vms
+  # Pull all (missing) snapshots from host "platop" into the local pool "tank"
+  # and only keep the 5 latest snapshots locally.
+``
