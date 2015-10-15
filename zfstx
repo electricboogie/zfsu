@@ -22,8 +22,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#set -x
-
 # Snapshot part of snapshot name
 snapof() {
 	echo $1 | cut -d'@' -f 2
@@ -39,9 +37,9 @@ usage() {
 	echo "Pull ZFS snapshots from a remote host into the local zpool."
 	echo ""
 	echo "Arguments:"
-	echo "  <remote-host>            - remote host, e.g. myhost"
-	echo "  <remote-fs>              - filesystem on remote host, e.g. tank/home"
-	echo "  <local-fs>               - filesystem on local host, e.g. backuppool/myhost/home"
+	echo "  <remote-host>            - Remote host, e.g. myhost"
+	echo "  <remote-fs>              - Filesystem on remote host, e.g. tank/home"
+	echo "  <local-fs>               - Filesystem on local host, e.g. backuppool/myhost/home"
 	echo ""
 	echo "Options:"
 	echo "  -k, --keep <count>       - preserved history length"
@@ -178,21 +176,10 @@ lockf=/var/lock/zfs_replicate_$(echo "$remote_host" "$remote_fs" | md5sum | cut 
 
 	# Housekeeping
 	if [ -n "$keep" ]; then
-		local_list="$(zfs list -H -r -d 1 -t snapshot -o name -s creation "$local_fs")"
-		local_delete_list=$(echo "$local_list" | head -n-$keep)
-
-		if [ -n "$local_delete_list" ]; then
-			echo "[$(date)] Destroying old local snapshots ..."
-			echo "$local_delete_list" | while read snap; do
-				if [ -z "$dryrun" ]; then
-					echo "[$(date)] - $snap"
-					zfs destroy "$snap"
-				else
-					echo "[$(date)] - This WOULD destroy $snap"
-				fi
-			done
+		if [ -z "$dryrun" ]; then
+			$(dirname $0)/zfsret "$local_fs" "$keep"
 		else
-			echo "[$(date)] No housekeeping to do."
+			$(dirname $0)/zfsret --dry-run "$local_fs" "$keep"
 		fi
 	fi
 ) 9>$lockf

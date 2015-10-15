@@ -1,0 +1,57 @@
+#!/bin/bash
+
+usage() {
+        echo "Usage: zfsret [OPTIONS] <local-fs> <keep>"
+        echo "Destroy local ZFS snapshots for a specific filesystem."
+        echo ""
+        echo "Arguments:"
+        echo "  <local-fs>               - Filesystem on local host, e.g. backuppool/myhost/home"
+        echo "  <keep>                   - Number of snapshots to keep"
+        echo ""
+        echo "Options:"
+        echo "  -n, --dry-run            - Don't apply changes, just print"
+        echo ""
+}
+
+# Script begins here
+if ! options=$(getopt -o n -l dry-run -- "$@") ; then
+	echo "Invalid options."
+	exit 1
+fi
+
+# Parse options
+while [ $# -gt 0 ]
+do
+        case $1 in
+                --dry-run | -n) dryrun="1" ;;
+                (-*) echo "ERROR: $0 - unrecognized option $1" 1>&2; exit 1;;
+                (*) break;;
+        esac
+        shift
+done
+
+local_fs=$1
+keep=$2
+
+# Check mandatory options
+[ -z "$local_fs" -o -z "$keep" ] && { usage; exit 1; }
+
+local_list="$(zfs list -H -r -d 1 -t snapshot -o name -s creation "$local_fs")"
+local_delete_list=$(echo "$local_list" | head -n-$keep)
+
+if [ -n "$local_delete_list" ]; then
+	echo "[$(date)] Destroying old local snapshots ..."
+
+	echo "$local_delete_list" | while read snap; do
+		if [ -z "$dryrun" ]; then
+			echo "[$(date)] - $snap"
+			echo zfs destroy "$snap"
+		else
+			echo "[$(date)] - This WOULD destroy $snap"
+		fi
+	done
+else
+	echo "[$(date)] No housekeeping to do."
+fi
+
+
