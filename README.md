@@ -9,7 +9,7 @@ zfstx
 -----
 
 **Usage**
-```
+```bash
 $ zfstx
 Usage: zfstx [OPTIONS] <remote-host>:<remote-fs> <local-fs>
 Pull ZFS snapshots from a remote host into the local zpool.
@@ -28,7 +28,7 @@ Options:
 ```
 
 **Examples**
-```
+```bash
 $ zfstx platop:tank/home/pheckel tank/backups/platop/home/pheckel
   # Pull all (missing) snapshots from host "platop" into the local pool "tank"
   # and don't apply any retention.
@@ -36,4 +36,28 @@ $ zfstx platop:tank/home/pheckel tank/backups/platop/home/pheckel
 $ zfstx --keep 5 platop:tank/home/pheckel/vms tank/backups/platop/home/pheckel/vms
   # Pull all (missing) snapshots from host "platop" into the local pool "tank"
   # and only keep the 5 latest snapshots locally.
-``
+```
+
+zfsret
+------
+
+**Usage**
+```bash
+$ zfsret
+Usage: zfsret [OPTIONS] <local-fs> <keep>
+Destroy local ZFS snapshots for a specific filesystem.
+
+Arguments:
+  <local-fs>               - Filesystem on local host, e.g. backuppool/myhost/home
+  <keep>                   - Number of snapshots to keep
+
+Options:
+  -n, --dry-run            - Don't apply changes, just print
+```
+
+**Examples**
+```bash
+$ zfsret tank/home/pheckel 10
+  # Destroy all but 10 snapshots of filesystem tank/home/pheckel
+  # This is not recursive (no -r)!
+```
