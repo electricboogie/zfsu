@@ -1,0 +1,4 @@
+debian/files
+debian/zfsu.debhelper.log
+debian/zfsu.substvars
+debian/zfsu/
