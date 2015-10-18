@@ -12,9 +12,10 @@ ZFS Utilities (zfsu)
 Installation
 ------------
 ```bash
+wget -qO - http://archive.philippheckel.com/apt/Release.key | sudo apt-key add -
 sudo sh -c "echo deb http://archive.philippheckel.com/apt/release/ release main > /etc/apt/sources.list.d/archive.philippheckel.com.list"
-$ sudo apt-get update
-$ sudo apt-get install zfsu
+sudo apt-get update
+sudo apt-get install zfsu
 ```
 
 zfsu tx (zfstx)
