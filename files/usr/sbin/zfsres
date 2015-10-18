@@ -4,7 +4,7 @@ PATH=$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 WAIT=60
 
 usage() {
-        echo "Usage: zfsresilver <pool> <slow-mirror>"
+        echo "Usage: zfsres <pool> <slow-mirror>"
         echo "Enable slow mirror(s) and wait for them to be resilvered and exit."
         echo ""
         echo "Arguments:"
