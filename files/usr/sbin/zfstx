@@ -50,12 +50,6 @@ usage() {
 	echo ""
 }
 
-# Must run as root
-if [ "$(id -u)" != "0" ]; then
-        echo "Script must be run as root."
-        exit 1
-fi
-
 # Script begins here
 if ! options=$(getopt -o k:b:p:P:n -l keep:,mbuffer:,port:,no-pigz,dry-run -- "$@") ; then
 	echo "Invalid options."
@@ -87,6 +81,12 @@ which mbuffer > /dev/null 2>&1 || { echo "ERROR: 'mbuffer' is not installed."; e
 
 # Check mandatory options
 [ -z "$remote_host" -o -z "$remote_fs" -o -z "$local_fs" ] && { usage; exit 1; }
+
+# Must run as root
+if [ "$(id -u)" != "0" ]; then
+        echo "Script must be run as root."
+        exit 1
+fi
 
 # Defaults if no parameter given
 [ -n "$port" ] || port=22

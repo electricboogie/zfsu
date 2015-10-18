@@ -36,7 +36,7 @@ usage() {
 case "$1" in
 	tx|transfer) shift; zfstx $@; ;;
 	ret|retention) shift; zfsret $@; ;;
-	res|resilver) shift; zfsresilver $@; ;;
+	res|resilver) shift; zfsres $@; ;;
 	*) usage; ;;
 esac
 
