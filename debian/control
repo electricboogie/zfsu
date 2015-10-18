@@ -8,10 +8,10 @@ Homepage: https://github.com/binwiederhier/zfsu
 
 Package: zfsu
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, debian-zfs | ubuntu-zfs
-Description: ZFS transfer tool zfsu and other ZFS utilities
+Depends: ${shlibs:Depends}, ${misc:Depends}, debian-zfs | ubuntu-zfs, mbuffer, pigz
+Description: Collection of ZFS tools
  Includes various ZFS specific tools. In particular:
-  - zfsu: Pull/mirror ZFS snapshots from a remote host
+  - zfstx: Pull/mirror ZFS snapshots from a remote host
   - zfsret: Destroy local snapshots by keeping a certain number
-  - zfsresilver: Enable slow ZFS mirror and wait for it to resilver
+  - zfsres: Enable slow ZFS mirror and wait for it to resilver
 
