@@ -1,16 +1,20 @@
-zfstx & zfsret
-==============
+ZFS Utilities (zfsu)
+====================
 
-**zfstx** maintains a mirror of a ZFS pool over the network. It is based on [ZFS transfer](https://github.com/jvsalo/zfs_transfer). Rather than pushing snapshots off to a remote host,it **pulls** remote snapshots into a local filesystem. That way, all the mirroring logic can be centralized on the backup-host.
+**zfsu** is a collection of ZFS utilities. It consists of the following tools:
 
-**zfsret** is a simple script to apply local retention (destroy snapshots) of a filesystem and its snapshots.
+- **zfsu tx** (aka **zfstx**) maintains a mirror of a ZFS pool over the network. It is based on [ZFS transfer](https://github.com/jvsalo/zfs_transfer). Rather than pushing snapshots off to a remote host,it **pulls** remote snapshots into a local filesystem. That way, all the mirroring logic can be centralized on the backup-host.
 
-zfstx
------
+- **zfsu ret** (aka **zfsret**) is a simple script to apply local retention (destroy snapshots) of a filesystem and its snapshots.
+
+- **zfsu res** (aka **zfsres**) is script to resilver a slow mirror, e.g. a HDD disk if mirrored with a SSH.
+
+zfsu tx (zfstx)
+--------------
 
 **Usage**
 ```bash
-$ zfstx
+$ zfsu tx
 Usage: zfstx [OPTIONS] <remote-host>:<remote-fs> <local-fs>
 Pull ZFS snapshots from a remote host into the local zpool.
 
@@ -38,12 +42,12 @@ $ zfstx --keep 5 platop:tank/home/pheckel/vms tank/backups/platop/home/pheckel/v
   # and only keep the 5 latest snapshots locally.
 ```
 
-zfsret
-------
+zfsu ret (zfsret)
+-----------------
 
 **Usage**
 ```bash
-$ zfsret
+$ zfsu ret
 Usage: zfsret [OPTIONS] <local-fs> <keep>
 Destroy local ZFS snapshots for a specific filesystem.
 
@@ -57,7 +61,20 @@ Options:
 
 **Examples**
 ```bash
-$ zfsret tank/home/pheckel 10
+$ zfsu ret tank/home/pheckel 10
   # Destroy all but 10 snapshots of filesystem tank/home/pheckel
   # This is not recursive (no -r)!
+```
+
+zfsu res (zfsres)
+-----------------
+**Usage**
+```bash
+$ zfsu res
+Usage: zfsres <pool> <slow-mirror>
+Enable slow mirror(s) and wait for them to be resilvered and exit.
+
+Arguments:
+  <pool>           - Name of the ZFS pool, e.g. tank
+  <slow-mirror>    - Description of a slow mirror device, e.g. wwn-0x50004cf20c41a05b
 ```
