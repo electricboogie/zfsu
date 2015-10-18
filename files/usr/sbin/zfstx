@@ -50,6 +50,12 @@ usage() {
 	echo ""
 }
 
+# Must run as root
+if [ "$(id -u)" != "0" ]; then
+        echo "Script must be run as root."
+        exit 1
+fi
+
 # Script begins here
 if ! options=$(getopt -o k:b:p:P:n -l keep:,mbuffer:,port:,no-pigz,dry-run -- "$@") ; then
 	echo "Invalid options."

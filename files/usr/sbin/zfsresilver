@@ -1,0 +1,51 @@
+#!/bin/bash
+
+PATH=$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+WAIT=60
+
+usage() {
+        echo "Usage: zfsresilver <pool> <slow-mirror>"
+        echo "Enable slow mirror(s) and wait for them to be resilvered and exit."
+        echo ""
+        echo "Arguments:"
+        echo "  <pool>           - Name of the ZFS pool, e.g. tank"
+        echo "  <slow-mirror>    - Description of a slow mirror device, e.g. wwn-0x50004cf20c41a05b"
+        echo ""
+}
+
+# Must run as root
+if [ "$(id -u)" != "0" ]; then
+        echo "Script must be run as root."
+        exit 1
+fi
+
+pool=$1
+slowmirror=$2
+
+# Check mandatory options
+[ -z "$pool" -o -z "$slowmirror" ] && { usage; exit 1; }
+
+if [ -n "$(zpool status $pool | grep $slowmirror | grep ONLINE)" ]; then
+        echo "[$(date)] Slow mirror already online. Resilvering canceled."
+        exit 2
+fi
+
+echo -n "[$(date)] Activating slow mirror $slowmirror on pool $pool ..."
+zpool online $pool $slowmirror
+echo " OK"
+
+echo -n "[$(date)] Waiting $WAIT seconds for resilvering to start ..."
+sleep $WAIT
+echo " OK"
+
+echo -n "[$(date)] Waiting for resilvering to finish ..."
+while [ -n "$(zpool status $pool | grep resilvering)" ]; do
+        echo -n "."
+        sleep 3
+done
+echo " OK"
+
+echo -n "[$(date)] Deactivating slow mirror $slowmirror on pool $pool ..."
+zpool offline $pool $slowmirror
+echo " OK"
+
