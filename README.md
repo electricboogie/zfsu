@@ -9,6 +9,14 @@ ZFS Utilities (zfsu)
 
 - **zfsu res** (aka **zfsres**) is script to resilver a slow mirror, e.g. a HDD disk if mirrored with a SSH.
 
+Installation
+------------
+```bash
+sudo sh -c "echo deb http://archive.philippheckel.com/apt/release/ release main > /etc/apt/sources.list.d/archive.philippheckel.com.list"
+$ sudo apt-get update
+$ sudo apt-get install zfsu
+```
+
 zfsu tx (zfstx)
 --------------
 
