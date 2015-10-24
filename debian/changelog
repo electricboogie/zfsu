@@ -1,3 +1,9 @@
+zfsu (1.0.2) unstable; urgency=medium
+
+  * Reactivate zfsret
+
+ -- Philipp Heckel <philipp.heckel@gmail.com>  Sat, 24 Oct 2015 13:54:09 +0200
+
 zfsu (1.0.1) unstable; urgency=medium
 
   * Updated description

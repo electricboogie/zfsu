@@ -73,7 +73,7 @@ if [ -n "$local_delete_list" ]; then
 	echo "$local_delete_list" | while read snap; do
 		if [ -z "$dryrun" ]; then
 			echo "[$(date)] - $snap"
-			echo zfs destroy "$snap"
+			zfs destroy "$snap"
 		else
 			echo "[$(date)] - This WOULD destroy $snap"
 		fi
