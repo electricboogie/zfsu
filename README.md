@@ -7,7 +7,7 @@ ZFS Utilities (zfsu)
 
 - **zfsu ret** (aka **zfsret**) is a simple script to apply local retention (destroy snapshots) of a filesystem and its snapshots.
 
-- **zfsu res** (aka **zfsres**) is script to resilver a slow mirror, e.g. a HDD disk if mirrored with a SSH.
+- **zfsu res** (aka **zfsres**) is script to resilver a slow mirror, e.g. a HDD disk if mirrored with a SSD.
 
 Installation
 ------------
